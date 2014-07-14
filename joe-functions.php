@@ -127,6 +127,9 @@ function dashboard_tweaks() {
     $wp_admin_bar->remove_menu('feedback');
     $wp_admin_bar->remove_menu('view-site');
     $wp_admin_bar->remove_menu('new-content');
+    $wp_admin_bar->remove_menu('themes');
+    $wp_admin_bar->remove_menu('customize');
+    $wp_admin_bar->remove_menu('menus');
 }
 add_action( 'wp_before_admin_bar_render', 'dashboard_tweaks' );
 //-------------
