@@ -26,6 +26,7 @@ Table of Content:
 - Change Default Help Text from Page Attributes Metabox
 - Allow SVG through WordPress Media Uploader
 - Add/Remove buttons to text editor
+- Add format dropdown to editor
 - Add custom styles to TinyMCE editor
 - Loading stylesheets for WordPress admin
 - Loading Javascript for wordpress admin
@@ -374,6 +375,73 @@ function userf_buttons_2($buttons) {
   return $buttons;
 }
 add_filter("mce_buttons_2", "userf_buttons_2");
+/*END*/
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+/*Add format dropdown to editor*/
+add_filter( 'mce_buttons_2', 'fb_mce_editor_buttons' );
+function fb_mce_editor_buttons( $buttons ) {
+
+    array_unshift( $buttons, 'styleselect' );
+    return $buttons;
+}
+add_filter( 'tiny_mce_before_init', 'fb_mce_before_init' );
+
+function fb_mce_before_init( $settings ) {
+
+    $style_formats = array(
+        array(
+            'title' => 'Download Link',
+            'selector' => 'a',
+            'classes' => 'download'
+            ),
+        array(
+            'title' => 'My Test',
+            'selector' => 'p',
+            'classes' => 'mytest',
+        ),
+        array(
+            'title' => 'AlertBox',
+            'block' => 'div',
+            'classes' => 'alert_box',
+            'wrapper' => true
+        ),
+        array(
+            'title' => 'Red Uppercase Text',
+            'inline' => 'span',
+            'styles' => array(
+                'color'         => 'red', // or hex value #ff0000
+                'fontWeight'    => 'bold',
+                'textTransform' => 'uppercase'
+            )
+        ),
+        array(
+            'title' => 'Headers',
+                'items' => array(
+                array(
+                    'title' => 'Header 1',
+                    'format' => 'h1',
+                    'icon' => 'bold'
+                ),
+                array(
+                    'title' => 'Header 2',
+                    'format' => 'h2',
+                    'icon' => 'bold'
+                )
+            )
+        ),
+        array(
+            'title' => 'Download Link',
+            'selector' => 'a',
+            'classes' => 'download'
+        )
+    );
+
+    $settings['style_formats'] = json_encode( $style_formats );
+
+    return $settings;
+
+}
 /*END*/
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
