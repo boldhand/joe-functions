@@ -33,7 +33,7 @@ Table of Content:
 - Add Custom Dashboard Metabox
 - Add theme support for Menus
 - Add theme support for thumbnails
-- Add menu,sub menu,top level menu in on admin panel 
+- Add menu,sub menu,top level menu in on admin panel
 - Give Editors permission to edit menus
 - Enable Automatic Updates for Major WordPress Releases
 - Improve the excerpt
@@ -61,7 +61,23 @@ Table of Content:
 - Add Metabox to a spacific page
 - Adding custom html to a page
 */
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+/* Enqueue Styles and Scripts */
+function my_assets() {
+	//wp_enqueue_style( $handle, $src, $deps, $ver, $media );
+	wp_enqueue_style( 'theme-style', get_template_directory_uri().'/css/main.css');
+	wp_enqueue_style( 'font-one', 'https://fonts.googleapis.com/css?family=Roboto+Condensed:400,700');
+	wp_enqueue_style( 'font-two', 'https://fonts.googleapis.com/css?family=Merriweather:400,300,300italic,400italic,700,700italic,900,900italic');
+	wp_enqueue_style( 'font-three', 'https://fonts.googleapis.com/css?family=Playfair+Display');
 
+	//wp_enqueue_script( $handle, $src, $deps, $ver, $in_footer );
+	wp_enqueue_script( 'map-api', 'https://maps.googleapis.com/maps/api/js?v=3.exp', array( 'jquery' ), '', true );
+	wp_enqueue_script( 'plugins', get_template_directory_uri().'/js/min/plugins.min.js', array( 'jquery' ), '', true );
+	wp_enqueue_script( 'main', get_template_directory_uri().'/js/min/main.min.js', array( 'plugins' ), '', true );
+}
+
+add_action( 'wp_enqueue_scripts', 'my_assets' );
 ////////////////////////////////////////////////////////////////////////
 /*Removing Menu Items for Non-Administrators */
 function remove_menu_items() {
@@ -108,7 +124,7 @@ function remove_dashboard_widgets(){
   unset($wp_meta_boxes['dashboard']['side']['core']['dashboard_primary']);
   unset($wp_meta_boxes['dashboard']['normal']['core']['dashboard_incoming_links']);
   unset($wp_meta_boxes['dashboard']['normal']['core']['dashboard_right_now']);
-  unset($wp_meta_boxes['dashboard']['side']['core']['dashboard_secondary']); 
+  unset($wp_meta_boxes['dashboard']['side']['core']['dashboard_secondary']);
   unset($wp_meta_boxes['dashboard']['side']['core']['dashboard_quick_press']);
   unset($wp_meta_boxes['dashboard']['normal']['core']['dashboard_quick_press']);
 }
@@ -243,6 +259,8 @@ function jp_remove_tags_post_meta_box() {
 	remove_meta_box( 'formatdiv', 'post', 'normal' );
 	remove_meta_box( 'trackbacksdiv', 'post', 'normal' );
 	remove_meta_box('revisionsdiv', 'post', 'normal');
+	remove_meta_box('commentstatusdiv', 'post', 'normal');
+	remove_meta_box('commentsdiv', 'post', 'normal');
 }
 add_action( 'admin_menu', 'jp_remove_tags_post_meta_box' );
 /*END*/
@@ -457,7 +475,7 @@ add_filter( 'mce_css', 'custom_mce_css' );
 function add_style_to_admin() {
     if(is_admin()){
         wp_enqueue_style( 'my-style', plugins_url( "css/admin-styles.css" , __FILE__ ), false, '1.0', 'all' );
-    }   
+    }
 }
 add_action( 'admin_head', 'add_style_to_admin' );
 /*END*/
@@ -467,7 +485,7 @@ add_action( 'admin_head', 'add_style_to_admin' );
 function add_script_to_admin() {
     if(is_admin()){
         wp_enqueue_script( 'my-script', plugins_url('js/admin-scripts.js', __FILE__), array('jquery'),'1.0', true );
-    }   
+    }
 }
 add_action( 'admin_head', 'add_script_to_admin' );
 /*END*/
@@ -490,12 +508,18 @@ add_theme_support( 'menus' );
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 /*Add theme support for thumbnails*/
-add_theme_support( 'post-thumbnails', array( 'post' ) ); 
+add_theme_support( 'post-thumbnails', array( 'post' ) );
 /*END*/
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
-/*Add menu,sub menu,top level menu in on admin panel 
-http://www.maheshchari.com/wordpress-add-admin-menu/ 
+/*Add Custom Size thumbnails*/
+add_image_size( 'sidebar-photo', 350, 400, true );
+add_image_size( 'team-photos', 250, 250, true );
+/*END*/
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+/*Add menu,sub menu,top level menu in on admin panel
+http://www.maheshchari.com/wordpress-add-admin-menu/
 http://wordpress.stackexchange.com/questions/1039/adding-an-arbitrary-link-to-the-admin-menu*/
 add_action('admin_menu', 'create_navigation_link');
 function create_navigation_link() {
@@ -548,6 +572,157 @@ function posts_status_color(){
 /*END*/
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
+//Remove quick edit
+function remove_row_actions($actions)
+{
+    unset( $actions['inline hide-if-no-js'] );
+    return $actions;
+}
+add_filter( 'page_row_actions', 'remove_row_actions', 10, 2 );
+add_filter( 'post_row_actions', 'remove_row_actions', 10, 2 );
+/*END*/
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+//Disable content editor for specific page template
+add_action( 'admin_init', 'hide_editor' );
+
+function hide_editor() {
+        $post_id = $_GET['post'] ? $_GET['post'] : $_POST['post_ID'] ;
+        if( !isset( $post_id ) ) return;
+
+        $template_file = get_post_meta($post_id, '_wp_page_template', true);
+
+    if($template_file == 'go-to-first-child.php'){ // edit the template name
+        remove_post_type_support('page', 'editor');
+    }
+}
+/*END*/
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+//Add Meta Box for News
+function custom_meta_box_markup_news()//the Metabox Content
+{
+    echo '<a class="button" href="post-new.php">Add new Post</a> <a class="button" href="edit.php">Edit/Delete Posts</a>';
+}
+
+
+function add_custom_meta_box_news()//Create the metabox
+{
+    add_meta_box("info-meta-box-news", "The News Posts", "custom_meta_box_markup_news", "page", "advanced", "high", null);
+}
+
+
+function single_page_add_meta_box_news()//metabox on a spacific
+{
+    if( in_array($_GET['post'], array('29') ) )// only if page News
+        add_custom_meta_box_news();
+}
+add_action( 'add_meta_boxes', 'single_page_add_meta_box_news' );
+/*END*/
+
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+/* Remove Contact Form 7 Links from dashboard menu items if not admin */
+    if (!(current_user_can('administrator'))) {
+	function remove_wpcf7() {
+	    remove_menu_page( 'wpcf7' );
+	    remove_menu_page( 'edit.php?post_type=sc_event' );
+	}
+
+	add_action('admin_menu', 'remove_wpcf7');
+     }
+/*END*/
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+/*Add menu sub page to ACF option Page */
+add_action( 'admin_menu', 'add_site_options', 12 );
+function add_site_options()
+{
+	//add general site options menu
+	$parent_slug = 'acf-options-header';
+	$page_title = 'Menu';
+	$menu_title = 'Menu';
+	$capability = 'delete_pages';
+	$menu_slug = 'nav-menus.php';
+	$function = '';
+	add_submenu_page( $parent_slug, $page_title, $menu_title, $capability, $menu_slug, $function);
+}
+/*END*/
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+/* Allow upload of SVG */
+function cc_mime_types($mimes) {
+  $mimes['svg'] = 'image/svg+xml';
+  return $mimes;
+}
+add_filter('upload_mimes', 'cc_mime_types');
+/*END*/
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+/* Add Custom Dashboard Metabox */
+function dashboard_widget_number_pages() {
+
+    $num_widgets = wp_count_posts( 'page' );
+    $num = number_format_i18n( $num_widgets->publish );
+    $text = _n( 'Page', 'Pages', $num_widgets->publish );
+    if ( current_user_can( 'edit_pages' ) ) {
+        $text = "<a href='edit.php?post_type=page' style='border:1px solid #eee;display:block;padding:10px;text-align:center;margin-top:10px'>$num $text</a>";
+    }
+    echo '<a href="post-new.php?post_type=page" style="border:1px solid #eee;display:block;padding:10px;text-align:center"><img src="'.get_template_directory_uri().'/img/add-button.svg" alt=""/><br/>New Page</a>';
+    echo  $text;
+    ?>
+      <ol style="border:1px solid #eee;padding:10px;margin-left:0;padding-top:20px;padding-left:40px;">
+       <?php
+            global $post;
+            $args = array( 'numberposts' => -1,'post_type' => 'page','orderby'  => 'title','order' => 'asc','post_status' => 'any' );
+            $myposts = get_posts( $args );
+                  foreach( $myposts as $post ) :  setup_postdata($post); ?>
+                      <li><a href="post.php?post=<?php the_ID(); ?>&action=edit"><?php the_title(); ?></a></li>
+            <?php endforeach; ?>
+     </ol>
+    <?php
+
+}
+function add_dashboard_widget_2() {
+      wp_add_dashboard_widget('number_pages_dashboard_page', 'Enterprise Pages', 'dashboard_widget_number_pages');
+}
+add_action('wp_dashboard_setup', 'add_dashboard_widget_2' );
+/*END*/
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+/* Add Custom Dashboard Metabox */
+function dashboard_widget_number_posts() {
+
+    $num_widgets = wp_count_posts( 'post' );
+    $num = number_format_i18n( $num_widgets->publish );
+    $text = _n( 'Post', 'Posts', $num_widgets->publish );
+    if ( current_user_can( 'edit_pages' ) ) {
+        $text = "<a href='edit.php?post_type=post' style='border:1px solid #eee;display:block;padding:10px;text-align:center;margin-top:10px'>$num $text</a>";
+    }
+    echo '<a href="post-new.php" style="border:1px solid #eee;display:block;padding:10px;text-align:center;"><img src="'.get_template_directory_uri().'/img/add-button.svg" alt=""/><br/>New Enterprise Post</a>';
+    echo  $text;
+    ?>
+      <ol style="border:1px solid #eee;padding:10px;margin-left:0;padding-top:20px;padding-left:40px;">
+       <?php
+            global $post;
+            $args = array( 'numberposts' => -1 );
+            $myposts = get_posts( $args );
+                  foreach( $myposts as $post ) :  setup_postdata($post); ?>
+                      <li style="padding-bottom:10px;"><? the_date(); ?><br/><a href="post.php?post=<?php the_ID(); ?>&action=edit"><?php the_title(); ?></a></li>
+            <?php endforeach; ?>
+     </ol>
+    <?php
+
+}
+function add_dashboard_widget_3() {
+      wp_add_dashboard_widget('number_posts_dashboard_page', 'Enterprise Posts', 'dashboard_widget_number_posts');
+}
+add_action('wp_dashboard_setup', 'add_dashboard_widget_3' );
+/*END*/
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
@@ -558,7 +733,7 @@ function posts_status_color(){
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 /*Add image size*/
-/*if ( function_exists( 'add_image_size' ) ) { 
+/*if ( function_exists( 'add_image_size' ) ) {
   add_image_size( 'thumbonetwenty', 200, 200, true );
 }*/
 /*END*/
@@ -568,9 +743,9 @@ function posts_status_color(){
 /*function jp_exclude_pages_from_admin($query) {
   if ( ! is_admin() )
     return $query;
- 
+
   global $pagenow, $post_type;
- 
+
   if ( !current_user_can( 'administrator' ) && is_admin() && $pagenow == 'edit.php' && $post_type == 'page' )
     $query->query_vars['post__not_in'] = array( '445' ); // Enter your page IDs here
 }
@@ -584,11 +759,11 @@ add_filter( 'parse_query', 'jp_exclude_pages_from_admin' );*/
     //$post_id = (isset($_GET['post']) ? $_GET['post'] : $_POST['post']);
     //if ( $post_id == "10" ){
     //display excerpt metabox on pages children of page with the id 10
-    $pid = (isset($_GET['post']) ? $_GET['post'] : $_POST['post_ID']); 
+    $pid = (isset($_GET['post']) ? $_GET['post'] : $_POST['post_ID']);
     $page_att = get_page( $pid );
     $page_parent = $page_att->post_parent;
     if(12 == $page_parent){
-         add_meta_box('postexcerpt', __('Excerpt'), 'post_excerpt_meta_box', 'page', 'normal', 'core');  
+         add_meta_box('postexcerpt', __('Excerpt'), 'post_excerpt_meta_box', 'page', 'normal', 'core');
     }
 }
 add_action( 'admin_init', 'mytheme_addbox' );*/
@@ -596,12 +771,12 @@ add_action( 'admin_init', 'mytheme_addbox' );*/
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 /*Remove Width and Height Attributes From Inserted Images*/
-/*add_filter( 'post_thumbnail_html', 'remove_width_attribute', 10 );
+add_filter( 'post_thumbnail_html', 'remove_width_attribute', 10 );
 add_filter( 'image_send_to_editor', 'remove_width_attribute', 10 );
 function remove_width_attribute( $html ) {
    $html = preg_replace( '/(width|height)="\d*"\s/', "", $html );
    return $html;
-}*/
+}
 /*END*/
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
@@ -619,7 +794,7 @@ function my_remove_menu_pages() {
     //$post_id = (isset($_GET['post']) ? $_GET['post'] : $_POST['post']);
     //if ( $post_id == "10" ){
     //display excerpt metabox on pages children of page with the id 10
-    $pid = (isset($_GET['post']) ? $_GET['post'] : $_POST['post_ID']); 
+    $pid = (isset($_GET['post']) ? $_GET['post'] : $_POST['post_ID']);
     $page_att = get_page( $pid );
     $page_parent = $page_att->post_parent;
     if(12 !== $page_parent){
@@ -635,7 +810,7 @@ add_action('admin_head', 'unused_meta_boxes');*/
     wp_register_script( 'add-bx-js', get_template_directory_uri() . '/jquery.bxslider/jquery.bxslider.min.js', array('jquery'),'',true  ); // Register our first script for BX Slider, to be brought out in the footer
     wp_register_script( 'add-bx-custom-js', get_template_directory_uri() . '/jquery.bxslider/custom.js', '', null,''  ); // Register our second custom script for BX
     wp_register_style( 'add-bx-css', get_template_directory_uri() . '/jquery.bxslider/jquery.bxslider.css','','', 'screen' ); // Register the BX Stylsheet
-    
+
     wp_enqueue_script( 'add-bx-js' );  // Enqueue our first script
     wp_enqueue_script( 'add-bx-custom-js' ); // Enqueue our second script
     wp_enqueue_style( 'add-bx-css' ); // Enqueue our stylesheet
@@ -645,7 +820,7 @@ add_action( 'wp_enqueue_scripts', 'james_adds_to_the_head' ); //Hooks our custom
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 /*Show Notification Message in WordPress Admin Pages*/
-/*function wps_wp_admin_area_notice() {  
+/*function wps_wp_admin_area_notice() {
    echo ' <div class="error">
                  <p>We are performing website Maintenance. Please dont do any activity until further notice!</p>
           </div>';
@@ -682,20 +857,20 @@ add_action('wp_network_dashboard_setup', 'remove_network_widgets', 20, 0);*/
                  'example_dashboard_widget',         // Widget slug.
                  'Add New Inktank Website',         // Title.
                  'example_dashboard_widget_function' // Display function.
-        );  
+        );
 }
 add_action( 'wp_network_dashboard_setup', 'example_add_dashboard_widgets' );
 function example_dashboard_widget_function() {
   echo '<a href="http://inktank.co/wp-admin/network/site-new.php">+ Create New Site</a>';
-  
-  
+
+
   echo '<p style="text-align:center">---<p>';
-  
-  
+
+
   $blog_count = get_blog_count();
   echo 'There are currently '.$blog_count.' Sites running on this Network.';
-  
-  
+
+
   $user_id = 1;
   $user_blogs = get_blogs_of_user( $user_id );
   foreach ($user_blogs AS $user_blog) {
@@ -719,7 +894,7 @@ function jpl_my_sites($admin_bar) {
     'title' => 'Inktank Sites',
     'href'  => admin_url('my-sites.php'),
     'meta'  => array(
-      'title' => __('Inktank Sites'),     
+      'title' => __('Inktank Sites'),
     ),
   ));
   $admin_bar->add_menu( array(
@@ -746,14 +921,14 @@ add_action('admin_bar_menu', 'jpl_my_sites', 20);*/
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 /*Change Default Post Label (changed to "News Releases")*/
-/*function frl_change_post_labels($post_type, $args){ 
+/*function frl_change_post_labels($post_type, $args){
     global $wp_post_types;
-     
+
     if($post_type != 'post')
         return;
-     
+
     $labels = new stdClass();
-     
+
     $labels->name               = __('News Releases', 'frl');
     $labels->singular_name      = __('News Release', 'frl');
     $labels->add_new            = __('Add new', 'frl');
@@ -768,55 +943,55 @@ add_action('admin_bar_menu', 'jpl_my_sites', 20);*/
     $labels->all_items          = __('All News Releases', 'frl');
     $labels->menu_name          = __('News Releases', 'frl');
     $labels->name_admin_bar     = __('News Release', 'frl');
-     
+
     $wp_post_types[$post_type]->labels = $labels;
 }
 add_action('registered_post_type', 'frl_change_post_labels', 2, 2);
- 
-function frl_change_post_menu_labels(){ // change adming menu labels 
+
+function frl_change_post_menu_labels(){ // change adming menu labels
     global $menu, $submenu;
-     
+
     $post_type_object = get_post_type_object('post');
-    $sub_label = $post_type_object->labels->all_items; 
+    $sub_label = $post_type_object->labels->all_items;
     $top_label = $post_type_object->labels->name;
-     
-    // find proper top menu item 
+
+    // find proper top menu item
     $post_menu_order = 0;
     foreach($menu as $order => $item){
-         
+
         if($item[2] == 'edit.php'){
             $menu[$order][0] = $top_label;
             $post_menu_order = $order;
             break;
         }
     }
-     
-    // find proper submenu 
+
+    // find proper submenu
     $submenu['edit.php'][$post_menu_order][0] = $sub_label;
 }
 add_action('admin_menu', 'frl_change_post_menu_labels');
- 
-function frl_change_post_updated_labels($messages){     // change updated post labels 
+
+function frl_change_post_updated_labels($messages){     // change updated post labels
     global $post;
-         
+
     $permalink = get_permalink($post->ID);
-         
+
     $messages['post'] = array(
-         
-    0 => '', 
+
+    0 => '',
     1 => sprintf( __('News Release updated. <a href="%s">View post</a>', 'frl'), esc_url($permalink)),
     2 => __('Custom field updated.', 'frl'),
     3 => __('Custom field deleted.', 'frl'),
-    4 => __('News Release updated.', 'frl'),    
+    4 => __('News Release updated.', 'frl'),
     5 => isset($_GET['revision']) ? sprintf(__('News Release restored to revision from %s', 'frl'), wp_post_revision_title((int)$_GET['revision'], false)) : false,
     6 => sprintf( __('News Release published. <a href="%s">View post</a>'), esc_url($permalink)),
     7 => __('News Release saved.', 'frl'),
     8 => sprintf( __('News Release submitted. <a target="_blank" href="%s">Preview</a>', 'frl'), esc_url(add_query_arg('preview','true', $permalink))),
     9 => __('News Release scheduled. <a target="_blank" href="%2$s">Preview</a>', 'frl'),
     10 => sprintf( __('News Release draft updated. <a target="_blank" href="%s">Preview</a>', 'frl'), esc_url(add_query_arg('preview', 'true', $permalink)))
- 
+
     );
- 
+
     return $messages;
 }
 add_filter('post_updated_messages', 'frl_change_post_updated_labels');*/
@@ -871,7 +1046,7 @@ function team_members_init() {
     'view_item' => __('View Team Member'),
     'search_items' => __('Search Team Members'),
     'not_found' =>  __('No Team Members found'),
-    'not_found_in_trash' => __('No Team Members found in Trash'), 
+    'not_found_in_trash' => __('No Team Members found in Trash'),
     'parent_item_colon' => '',
     'menu_name' => 'Team Members'
   );
@@ -879,16 +1054,16 @@ function team_members_init() {
     'labels' => $labels,
     'public' => true,
     'publicly_queryable' => true,
-    'show_ui' => true, 
-    'show_in_menu' => true, 
+    'show_ui' => true,
+    'show_in_menu' => true,
     'query_var' => true,
     'rewrite' => true,
     'capability_type' => 'post',
-    'has_archive' => true, 
+    'has_archive' => true,
     'hierarchical' => false,
     'menu_position' => 4,
     'supports' => array( 'title', 'editor', 'thumbnail', 'excerpt' )
-  ); 
+  );
   register_post_type('team_members',$args);
 }*/
 /*END*/
@@ -943,7 +1118,7 @@ function posts_custom_columns($column_name, $id){
 /* Add Metabox to a spacific page */
 /*add_action('admin_init','my_meta_init');
 function cd_meta_box_cb(){
-  echo '<p style="text-align:center;padding:30px 0;display:block">Team members list is accessed from the left menu.</p>'; 
+  echo '<p style="text-align:center;padding:30px 0;display:block">Team members list is accessed from the left menu.</p>';
 }
 function my_meta_init(){
   $post_id = $_GET['post'] ? $_GET['post'] : $_POST['post_ID'] ;
@@ -969,7 +1144,7 @@ function my_meta_init(){
     add_action( 'edit_form_after_editor', 'myprefix_edit_form_after_editor' );
     function myprefix_edit_form_after_editor() {
         echo '<p style="text-align:center;padding:30px 0;display:block;color:#D74E21">Team members list is accessed <a href="'; echo get_site_url(); echo '/wp-admin/edit.php?post_type=team_members">from the left menu.</a></p>';
-    } 
+    }
     //add_action( 'edit_form_advanced', 'myprefix_edit_form_advanced' );
     //function myprefix_edit_form_advanced() {
     //    echo '<h2>This is ye olde edit_form_advanced!</h2>';
@@ -980,39 +1155,39 @@ function my_meta_init(){
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 /*DISPLAY ADDITIONAL WARNING MESSAGE AFTER POST SAVING*/
-/*function frl_on_save_post($post_id, $post) {// add warning filter when saving post 
- 
-    if($post->post_type == 'post') //test for something real here       
+/*function frl_on_save_post($post_id, $post) {// add warning filter when saving post
+
+    if($post->post_type == 'post') //test for something real here
         add_filter('redirect_post_location', 'frl_custom_warning_filter');
- 
+
 }
 add_action('save_post', 'frl_on_save_post', 2, 2);
- 
+
 function frl_custom_warning_filter($location) { // filter redirect location to add warning parameter
- 
+
     $location = add_query_arg(array('warning'=>'my_warning'), $location);
     return $location;
 }
- 
-function frl_warning_in_notice() { // print warning message 
-         
+
+function frl_warning_in_notice() { // print warning message
+
     if(!isset($_REQUEST['warning']) || empty($_REQUEST['warning']))
         return;
-         
+
     $warnum = trim($_REQUEST['warning']);
- 
-    // possible warnings codes and messages                
+
+    // possible warnings codes and messages
     $warnings = array(
         'my_warning' => __('This is my truly custom warning!', 'frl')
     );
-         
+
     if(!isset($warnings[$warnum]))
-        return; 
-     
+        return;
+
     echo '<div class="error message"><p><strong>';
     echo $warnings[$warnum];
     echo '</strong></p></div>';
-}       
+}
 add_action('admin_notices', 'frl_warning_in_notice');*/
 /*END*/
 ?>
