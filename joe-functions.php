@@ -659,7 +659,70 @@ add_filter('upload_mimes', 'cc_mime_types');
 /*END*/
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+/* Add Custom Dashboard Metabox */
+function dashboard_widget_number_pages() {
 
+    $num_widgets = wp_count_posts( 'page' );
+    $num = number_format_i18n( $num_widgets->publish );
+    $text = _n( 'Page', 'Pages', $num_widgets->publish );
+    if ( current_user_can( 'edit_pages' ) ) {
+        $text = "<a href='edit.php?post_type=page' style='border:1px solid #eee;display:block;padding:10px;text-align:center;margin-top:10px'>$num $text</a>";
+    }
+    echo '<a href="post-new.php?post_type=page" style="border:1px solid #eee;display:block;padding:10px;text-align:center"><img src="'.get_template_directory_uri().'/img/add-button.svg" alt=""/><br/>New Page</a>';
+    echo  $text;
+    ?>
+      <ol style="border:1px solid #eee;padding:10px;margin-left:0;padding-top:20px;padding-left:40px;">
+       <?php
+            global $post;
+            $args = array( 'numberposts' => -1,'post_type' => 'page','orderby'  => 'title','order' => 'asc','post_status' => 'any' );
+            $myposts = get_posts( $args );
+                  foreach( $myposts as $post ) :  setup_postdata($post); ?>
+                      <li><a href="post.php?post=<?php the_ID(); ?>&action=edit"><?php the_title(); ?></a></li>
+            <?php endforeach; ?>
+     </ol>
+    <?php
+
+}
+function add_dashboard_widget_2() {
+      wp_add_dashboard_widget('number_pages_dashboard_page', 'Enterprise Pages', 'dashboard_widget_number_pages');
+}
+add_action('wp_dashboard_setup', 'add_dashboard_widget_2' );
+/*END*/
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+/* Add Custom Dashboard Metabox */
+function dashboard_widget_number_posts() {
+
+    $num_widgets = wp_count_posts( 'post' );
+    $num = number_format_i18n( $num_widgets->publish );
+    $text = _n( 'Post', 'Posts', $num_widgets->publish );
+    if ( current_user_can( 'edit_pages' ) ) {
+        $text = "<a href='edit.php?post_type=post' style='border:1px solid #eee;display:block;padding:10px;text-align:center;margin-top:10px'>$num $text</a>";
+    }
+    echo '<a href="post-new.php" style="border:1px solid #eee;display:block;padding:10px;text-align:center;"><img src="'.get_template_directory_uri().'/img/add-button.svg" alt=""/><br/>New Enterprise Post</a>';
+    echo  $text;
+    ?>
+      <ol style="border:1px solid #eee;padding:10px;margin-left:0;padding-top:20px;padding-left:40px;">
+       <?php
+            global $post;
+            $args = array( 'numberposts' => -1 );
+            $myposts = get_posts( $args );
+                  foreach( $myposts as $post ) :  setup_postdata($post); ?>
+                      <li style="padding-bottom:10px;"><? the_date(); ?><br/><a href="post.php?post=<?php the_ID(); ?>&action=edit"><?php the_title(); ?></a></li>
+            <?php endforeach; ?>
+     </ol>
+    <?php
+
+}
+function add_dashboard_widget_3() {
+      wp_add_dashboard_widget('number_posts_dashboard_page', 'Enterprise Posts', 'dashboard_widget_number_posts');
+}
+add_action('wp_dashboard_setup', 'add_dashboard_widget_3' );
+/*END*/
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
