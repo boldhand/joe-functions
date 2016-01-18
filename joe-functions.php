@@ -181,11 +181,15 @@ add_filter('manage_pages_columns', 'remove_pages_columns');
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 /* Remove Posts Columns */
-add_action( 'admin_init', 'fb_deactivate_support' );
-function fb_deactivate_support() {
-    remove_post_type_support( 'post', 'comments' );
-    remove_post_type_support( 'post', 'author' );
+function remove_columns_filter( $columns ) {
+    unset($columns['author']);
+    unset($columns['tags']);
+    unset($columns['categories']);
+    unset($columns['tags']);
+    unset($columns['comments']);
+    return $columns;
 }
+add_filter( 'manage_edit-post_columns', 'remove_columns_filter');
 /* END */
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
@@ -261,6 +265,9 @@ function jp_remove_tags_post_meta_box() {
 	remove_meta_box('revisionsdiv', 'post', 'normal');
 	remove_meta_box('commentstatusdiv', 'post', 'normal');
 	remove_meta_box('commentsdiv', 'post', 'normal');
+	remove_meta_box('postexcerpt', 'post', 'normal');
+	remove_meta_box('categorydiv', 'post', 'normal');
+	remove_meta_box('tagsdiv-post_tag', 'post', 'normal');
 }
 add_action( 'admin_menu', 'jp_remove_tags_post_meta_box' );
 /*END*/
